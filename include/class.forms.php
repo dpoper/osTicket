@@ -1341,7 +1341,6 @@ class FormField {
     }
 
     function getEditForm($source=null) {
-
         $fields = array(
                 'field' => $this,
                 'comments' => new TextareaField(array(
@@ -1457,6 +1456,9 @@ class TextboxField extends FormField {
         $config = $this->getConfiguration();
         $validators = array(
             '' => '',
+            'noop' => array(
+                function($a, &$b) { return true; }
+            ),
             'formula' => array(array('Validator', 'is_formula'),
                 __('Content cannot start with the following characters: = - + @')),
             'email' =>  array(array('Validator', 'is_valid_email'),
@@ -1465,7 +1467,10 @@ class TextboxField extends FormField {
                 __('Enter a valid phone number')),
             'ip' =>     array(array('Validator', 'is_ip'),
                 __('Enter a valid IP address')),
-            'number' => array('is_numeric', __('Enter a number')),
+            'number' => array(array('Validator', 'is_numeric'),
+                __('Enter a number')),
+            'password' => array(array('Validator', 'check_passwd'),
+                __('Invalid Password')),
             'regex' => array(
                 function($v) use ($config) {
                     $regex = $config['regex'];
@@ -1485,16 +1490,19 @@ class TextboxField extends FormField {
         if (!$valid && !($this->getForm() instanceof AdvancedSearchForm))
             $valid = 'formula';
         $func = $validators[$valid];
-        $error = $func[1];
+        $error = $err = null;
+        // If validator is number and the value is &#48 set to 0 (int) for is_numeric
+        if ($valid == 'number' && $value == '&#48')
+            $value = 0;
         if ($config['validator-error'])
             $error = $this->getLocal('validator-error', $config['validator-error']);
         if (is_array($func) && is_callable($func[0]))
-            if (!call_user_func($func[0], $value))
-                $this->_errors[] = $error;
+            if (!call_user_func_array($func[0], array($value, &$err)))
+                $this->_errors[] =  $error ?: $err ?: $func[1];
     }
 
     function parse($value) {
-        return Format::striptags($value);
+        return Format::strip_emoticons(Format::striptags($value));
     }
 
     function display($value) {
@@ -1504,6 +1512,11 @@ class TextboxField extends FormField {
 
 class PasswordField extends TextboxField {
     static $widget = 'PasswordWidget';
+
+    function __construct($options=array()) {
+        parent::__construct($options);
+        $this->set('validator', 'password');
+    }
 
     function parse($value) {
         // Don't trim the value
@@ -1818,7 +1831,7 @@ class ChoiceField extends FormField {
         if (is_string($value) && strpos($value, ',')) {
             $values = array();
             $choices = $this->getChoices();
-            $vals = explode(',', $value);
+            $vals = array_map('trim', explode(',', $value));
             foreach ($vals as $V) {
                 if (isset($choices[$V]))
                     $values[$V] = $choices[$V];
@@ -2067,6 +2080,28 @@ class NumericField extends FormField {
                         ),
             )),
         );
+    }
+
+    function getSearchQ($method, $value, $name=false) {
+        switch ($method) {
+        case 'equal':
+            return new Q(array(
+                "{$name}__exact" => intval($value)
+            ));
+        break;
+        case 'greater':
+            return Q::any(array(
+                "{$name}__gt" => intval($value)
+            ));
+        break;
+        case 'less':
+            return Q::any(array(
+                "{$name}__lt" => intval($value)
+            ));
+        break;
+        default:
+            return parent::getSearchQ($method, $value, $name);
+        }
     }
 }
 
@@ -2699,7 +2734,7 @@ class ThreadEntryField extends FormField {
 
     function getWidget($widgetClass=false) {
         if ($hint = $this->getLocal('hint'))
-            $this->set('placeholder', $hint);
+            $this->set('placeholder', Format::striptags($hint));
         $this->set('hint', null);
         $widget = parent::getWidget($widgetClass);
         return $widget;
@@ -3862,8 +3897,8 @@ class FileUploadField extends FormField {
         $A = (array) $after;
         $added = array_diff($A, $B);
         $deleted = array_diff($B, $A);
-        $added = Format::htmlchars(array_keys($added));
-        $deleted = Format::htmlchars(array_keys($deleted));
+        $added = Format::htmlchars(array_values($added));
+        $deleted = Format::htmlchars(array_values($deleted));
 
         if ($added && $deleted) {
             $desc = sprintf(
@@ -4221,7 +4256,7 @@ class TextareaWidget extends Widget {
         <span style="display:inline-block;width:100%">
         <textarea <?php echo $rows." ".$cols." ".$maxlength." ".$class
                 .' '.Format::array_implode('=', ' ', $attrs)
-                .' placeholder="'.$config['placeholder'].'"'; ?>
+                .' placeholder="'.$this->field->getLocal('placeholder', $config['placeholder']).'"'; ?>
             id="<?php echo $this->id; ?>"
             name="<?php echo $this->name; ?>"><?php
                 echo Format::htmlchars($this->value);
@@ -4615,7 +4650,7 @@ class CheckboxWidget extends Widget {
 
     function getValue() {
         $data = $this->field->getSource();
-        if (count($data)) {
+        if (is_array($data)) {
             if (isset($data[$this->name]))
                 return @in_array($this->field->get('id'),
                         $data[$this->name]);
@@ -4624,7 +4659,7 @@ class CheckboxWidget extends Widget {
                 return $data[$this->field->get('id')];
         }
 
-        if (isset($this->value))
+        if (!$data && isset($this->value))
             return $this->value;
 
 
@@ -4648,6 +4683,9 @@ class DatetimePickerWidget extends Widget {
         $timeFormat = $cfg->getTimeFormat(true);
         if (!isset($this->value) && ($default=$this->field->get('default')))
             $this->value = $default;
+
+        if ($this->value == 0)
+            $this->value = '';
 
         if ($this->value) {
             $datetime = Format::parseDateTime($this->value);
@@ -4848,7 +4886,7 @@ class ThreadEntryWidget extends Widget {
             class="<?php if ($config['html']) echo 'richtext';
                 ?> draft draft-delete" <?php echo $attrs; ?>
             cols="21" rows="8" style="width:80%;"><?php echo
-            Format::htmlchars($this->value) ?: $draft; ?></textarea>
+            ThreadEntryBody::clean($this->value ?: $draft); ?></textarea>
     <?php
         if (!$config['attachments'])
             return;
@@ -5102,7 +5140,7 @@ class FreeTextWidget extends Widget {
         }
         if ($hint = $this->field->getLocal('hint')) { ?>
         <em><?php
-            echo Format::htmlchars($hint);
+            echo Format::display($hint);
         ?></em><?php
         } ?>
         <div><?php

@@ -276,6 +276,9 @@ implements TemplateVariable, Searchable {
                 'topic_id' => $this->getId()
             ))->delete();
             db_query('UPDATE '.TICKET_TABLE.' SET topic_id=0 WHERE topic_id='.db_input($this->getId()));
+
+            $type = array('type' => 'deleted');
+            Signal::send('object.deleted', $this, $type);
         }
 
         return true;
@@ -462,16 +465,16 @@ implements TemplateVariable, Searchable {
         $this->isactive = $vars['isactive'];
         $this->ispublic = $vars['ispublic'];
         $this->sequence_id = $vars['custom-numbers'] ? $vars['sequence_id'] : 0;
-        $this->number_format = $vars['custom-numbers'] ? $vars['number_format'] : '';
-        $this->flags = $vars['custom-numbers'] ? self::FLAG_CUSTOM_NUMBERS : $this->flags;
+        $this->number_format = $vars['number_format'];
+        $this->setFlag(self::FLAG_CUSTOM_NUMBERS, ($vars['custom-numbers']));
         $this->noautoresp = $vars['noautoresp'];
         $this->notes = Format::sanitize($vars['notes']);
 
         $filter_actions = FilterAction::objects()->filter(array('type' => 'topic', 'configuration' => '{"topic_id":'. $this->getId().'}'));
         if ($filter_actions && $vars['status'] == 'active')
-          FilterAction::setFilterFlag($filter_actions, 'topic', false);
+          FilterAction::setFilterFlags($filter_actions, 'Filter::FLAG_INACTIVE_HT', false);
         else
-          FilterAction::setFilterFlag($filter_actions, 'topic', true);
+          FilterAction::setFilterFlags($filter_actions, 'Filter::FLAG_INACTIVE_HT', true);
 
         switch ($vars['status']) {
           case 'active':

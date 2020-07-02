@@ -973,9 +973,14 @@ class CustomQueue extends VerySimpleModel {
                 }
 
                 // Fetch a criteria Q for the query
-                if (list(,$field) = $searchable[$name])
+                if (list(,$field) = $searchable[$name]) {
+                    // Add annotation if the field supports it.
+                    if (is_subclass_of($field, 'AnnotatedField'))
+                       $qs = $field->annotate($qs, $name);
+
                     if ($q = $field->getSearchQ($method, $value, $name))
                         $qs = $qs->filter($q);
+                }
             }
         }
 
@@ -1026,7 +1031,8 @@ class CustomQueue extends VerySimpleModel {
     }
 
     function useStandardColumns() {
-        return !count($this->columns);
+        return ($this->hasFlag(self::FLAG_INHERIT_COLUMNS) ||
+                !count($this->columns));
     }
 
     function inheritExport() {
@@ -1205,14 +1211,14 @@ class CustomQueue extends VerySimpleModel {
         if (!$vars['queue-name'])
             $errors['queue-name'] = __('A title is required');
         elseif (($q=CustomQueue::lookup(array(
-                        'title' => $vars['queue-name'],
+                        'title' => Format::htmlchars($vars['queue-name']),
                         'parent_id' => $vars['parent_id'] ?: 0,
                         'staff_id'  => $this->staff_id)))
                 && $q->getId() != $this->id
                 )
             $errors['queue-name'] = __('Saved queue with same name exists');
 
-        $this->title = $vars['queue-name'];
+        $this->title = Format::htmlchars($vars['queue-name']);
         $this->parent_id = @$vars['parent_id'] ?: 0;
         if ($this->parent_id && !$this->parent)
             $errors['parent_id'] = __('Select a valid queue');
@@ -1249,6 +1255,9 @@ class CustomQueue extends VerySimpleModel {
         $this->setFlag(self::FLAG_INHERIT_SORTING,
             $this->parent_id > 0 && isset($vars['inherit-sorting']));
 
+        // Saved Search - Use standard columns
+        if ($this instanceof SavedSearch && isset($vars['inherit-columns']))
+            $this->setFlag(self::FLAG_INHERIT_COLUMNS);
         // Update queue columns (but without save)
         if (!isset($vars['columns']) && $this->parent) {
             // No columns -- imply column inheritance
