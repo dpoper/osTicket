@@ -13,6 +13,11 @@
 
     vim: expandtab sw=4 ts=4 sts=4:
 **********************************************************************/
+//dip 12.02.2020 start
+header("Location: https://support.poper.de/osticket/login.php");
+exit;
+//dip 12.02.2020 end
+
 require('client.inc.php');
 
 require_once INCLUDE_DIR . 'class.page.php';
