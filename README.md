@@ -141,3 +141,7 @@ osTicket is supported by several magical open source projects including:
   
 Tracking
   * https://github.com/osTicket/osTicket/pull/5491
+  * https://github.com/osTicket/osTicket/pull/5564
+  * https://github.com/poctob/OSTEquipmentPlugin/wiki
+    * https://github.com/poctob/OSTEquipmentPlugin.wiki.git
+    * https://github.com/poctob/OSTEquipmentPlugin/wiki/Plugin-Development-Part-1-Getting-Started
