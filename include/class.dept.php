@@ -58,6 +58,8 @@ implements TemplateVariable, Searchable {
     var $_groupids;
     var $config;
 
+    var $schedule;
+
     var $template;
     var $autorespEmail;
 
@@ -340,6 +342,18 @@ implements TemplateVariable, Searchable {
         return $this->sla;
     }
 
+    function getScheduleId() {
+        return $this->schedule_id;
+    }
+
+    function getSchedule() {
+        if (!isset($this->schedule) && $this->getScheduleId())
+            $this->schedule = BusinessHoursSchedule::lookup(
+                        $this->getScheduleId());
+
+        return $this->schedule;
+    }
+
     function getTemplateId() {
          return $this->tpl_id;
     }
@@ -505,6 +519,9 @@ implements TemplateVariable, Searchable {
 
         $id = $this->getId();
         if (parent::delete()) {
+            $type = array('type' => 'deleted');
+            Signal::send('object.deleted', $this, $type);
+
             // DO SOME HOUSE CLEANING
             //Move tickets to default Dept. TODO: Move one ticket at a time and send alerts + log notes.
             Ticket::objects()
@@ -528,18 +545,6 @@ implements TemplateVariable, Searchable {
             Email::objects()
                 ->filter(array('dept_id' => $id))
                 ->delete();
-
-            foreach(FilterAction::objects()
-                ->filter(array('type' => FA_RouteDepartment::$type)) as $fa
-            ) {
-                $config = $fa->getConfiguration();
-                if ($config && $config['dept_id'] == $id) {
-                    $config['dept_id'] = 0;
-                    // FIXME: Move this code into FilterAction class
-                    $fa->set('configuration', JsonDataEncoder::encode($config));
-                    $fa->save();
-                }
-            }
 
             // Delete extended access entries
             StaffDeptAccess::objects()
@@ -594,6 +599,16 @@ implements TemplateVariable, Searchable {
             $this->flags |= $flag;
         else
             $this->flags &= ~$flag;
+    }
+
+    function hasFlag($flag) {
+        return ($this->get('flags', 0) & $flag) != 0;
+    }
+
+    function flagChanged($flag, $var) {
+        if (($this->hasFlag($flag) && !$var) ||
+            (!$this->hasFlag($flag) && $var))
+                return true;
     }
 
     function export($dept, $criteria=null, $filename='') {
@@ -768,8 +783,12 @@ implements TemplateVariable, Searchable {
             $errors['pid'] = __('Department selection is required');
 
         $dept = Dept::lookup($vars['pid']);
-        if($dept && !$dept->isActive())
-          $errors['dept_id'] = sprintf(__('%s selected must be active'), __('Parent Department'));
+        if ($dept) {
+          if (!$dept->isActive())
+            $errors['dept_id'] = sprintf(__('%s selected must be active'), __('Parent Department'));
+          elseif (strpos($dept->getFullPath(), '/'.$this->getId().'/') !== false)
+            $errors['pid'] = sprintf(__('%s cannot contain the current %s'), __('Parent Department'), __('Department'));
+        }
 
         if ($vars['sla_id'] && !SLA::lookup($vars['sla_id']))
             $errors['sla_id'] = __('Invalid SLA');
@@ -799,11 +818,34 @@ implements TemplateVariable, Searchable {
         if ($errors)
             return false;
 
+        $vars['disable_auto_claim'] = isset($vars['disable_auto_claim']) ? 1 : 0;
+        if ($this->getId()) {
+            //flags
+            $disableAutoClaim = $this->flagChanged(self::FLAG_DISABLE_AUTO_CLAIM, $vars['disable_auto_claim']);
+            $disableAutoAssign = $this->flagChanged(self::FLAG_DISABLE_REOPEN_AUTO_ASSIGN, $vars['disable_reopen_auto_assign']);
+            $ticketAssignment = ($this->getAssignmentFlag() != $vars['assignment_flag']);
+            foreach ($vars as $key => $value) {
+                if ($key == 'status' && $this->getStatus() && strtolower($this->getStatus()) != $value) {
+                    $type = array('type' => 'edited', 'status' => ucfirst($value));
+                    Signal::send('object.edited', $this, $type);
+                } elseif ((isset($this->$key) && ($this->$key != $value) && $key != 'members') ||
+                         ($disableAutoClaim && $key == 'disable_auto_claim') ||
+                          $ticketAssignment && $key == 'assignment_flag' ||
+                          $disableAutoAssign && $key == 'disable_reopen_auto_assign') {
+                    $type = array('type' => 'edited', 'key' => $key);
+                    Signal::send('object.edited', $this, $type);
+                }
+            }
+        }
+        if ($vars['disable_auto_claim'] !== 1)
+            unset($vars['disable_auto_claim']);
+
         $this->pid = $vars['pid'] ?: null;
         $this->ispublic = isset($vars['ispublic']) ? (int) $vars['ispublic'] : 0;
         $this->email_id = isset($vars['email_id']) ? (int) $vars['email_id'] : 0;
         $this->tpl_id = isset($vars['tpl_id']) ? (int) $vars['tpl_id'] : 0;
         $this->sla_id = isset($vars['sla_id']) ? (int) $vars['sla_id'] : 0;
+        $this->schedule_id = isset($vars['schedule_id']) ? (int) $vars['schedule_id'] : 0;
         $this->autoresp_email_id = isset($vars['autoresp_email_id']) ? (int) $vars['autoresp_email_id'] : 0;
         $this->manager_id = $vars['manager_id'] ?: 0;
         $this->name = Format::striptags($vars['name']);
@@ -819,9 +861,9 @@ implements TemplateVariable, Searchable {
 
         $filter_actions = FilterAction::objects()->filter(array('type' => 'dept', 'configuration' => '{"dept_id":'. $this->getId().'}'));
         if ($filter_actions && $vars['status'] == 'active')
-          FilterAction::setFilterFlag($filter_actions, 'dept', false);
+          FilterAction::setFilterFlags($filter_actions, 'Filter::FLAG_INACTIVE_DEPT', false);
         else
-          FilterAction::setFilterFlag($filter_actions, 'dept', true);
+          FilterAction::setFilterFlags($filter_actions, 'Filter::FLAG_INACTIVE_DEPT', true);
 
         switch ($vars['status']) {
           case 'active':
@@ -838,8 +880,6 @@ implements TemplateVariable, Searchable {
             $this->setFlag(self::FLAG_ACTIVE, false);
             $this->setFlag(self::FLAG_ARCHIVED, true);
         }
-
-        $this->setFlag(self::FLAG_DISABLE_AUTO_CLAIM, isset($vars['disable_auto_claim']));
 
         switch ($vars['assignment_flag']) {
           case 'all':
@@ -905,6 +945,8 @@ implements TemplateVariable, Searchable {
                   'staff_id' => $staff_id, 'role_id' => $role_id
               ));
               $this->extended->add($da);
+              $type = array('type' => 'edited', 'key' => 'Staff Added');
+              Signal::send('object.edited', $this, $type);
           }
           else {
               $da->role_id = $role_id;
@@ -917,6 +959,8 @@ implements TemplateVariable, Searchable {
           return false;
 
       if ($dropped) {
+          $type = array('type' => 'edited', 'key' => 'Staff Removed');
+          Signal::send('object.edited', $this, $type);
           $this->extended->saveAll();
           $this->extended
               ->filter(array('staff_id__in' => array_keys($dropped)))

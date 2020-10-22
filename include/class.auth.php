@@ -120,7 +120,7 @@ class ClientCreateRequest {
     function attemptAutoRegister() {
         global $cfg;
 
-        if (!$cfg)
+        if (!$cfg || !$cfg->isClientRegistrationEnabled())
             return false;
 
         // Attempt to automatically register
@@ -488,6 +488,9 @@ abstract class StaffAuthenticationBackend  extends AuthenticationBackend {
             sprintf(_S("%s logged in [%s], via %s"), $staff->getUserName(),
                 $_SERVER['REMOTE_ADDR'], get_class($bk))); //Debug.
 
+        $agent = Staff::lookup($staff->getId());
+        $type = array('type' => 'login');
+        Signal::send('person.login', $agent, $type);
         // Tag the authkey.
         $authkey = $bk::$id.':'.$authkey;
 
@@ -528,6 +531,9 @@ abstract class StaffAuthenticationBackend  extends AuthenticationBackend {
                     $staff->getUserName(),
                     $_SERVER['REMOTE_ADDR'])); //Debug.
 
+        $agent = Staff::lookup($staff->getId());
+        $type = array('type' => 'logout');
+        Signal::send('person.logout', $agent, $type);
         Signal::send('auth.logout', $staff);
     }
 
@@ -580,19 +586,27 @@ abstract class ExternalStaffAuthenticationBackend
     static $sign_in_image_url = false;
     static $service_name = "External";
 
-    function renderExternalLink() { ?>
-        <a class="external-sign-in" title="Sign in with <?php echo static::$service_name; ?>"
+    function getServiceName() {
+        return static::$service_name;
+    }
+
+    function renderExternalLink() {
+        $service = sprintf('%s %s',
+                __('Sign in with'),
+                $this->getServiceName());
+        ?>
+        <a class="external-sign-in" title="<?php echo $service; ?>"
                 href="login.php?do=ext&amp;bk=<?php echo urlencode(static::$id); ?>">
 <?php if (static::$sign_in_image_url) { ?>
         <img class="sign-in-image" src="<?php echo static::$sign_in_image_url;
-            ?>" alt="Sign in with <?php echo static::$service_name; ?>"/>
+            ?>" alt="<?php echo $service; ?>"/>
 <?php } else { ?>
             <div class="external-auth-box">
             <span class="external-auth-icon">
                 <i class="icon-<?php echo static::$fa_icon; ?> icon-large icon-fixed-with"></i>
             </span>
             <span class="external-auth-name">
-                Sign in with <?php echo static::$service_name; ?>
+               <?php echo $service; ?>
             </span>
             </div>
 <?php } ?>
@@ -677,6 +691,10 @@ abstract class UserAuthenticationBackend  extends AuthenticationBackend {
                 $user->getUserName(), $user->getId(), $_SERVER['REMOTE_ADDR']);
         $ost->logDebug(_S('User login'), $msg);
 
+        $u = $user->getSessionUser()->getUser();
+        $type = array('type' => 'login');
+        Signal::send('person.login', $u, $type);
+
         if ($bk->supportsInteractiveAuthentication() && ($acct=$user->getAccount()))
             $acct->cancelResetTokens();
 
@@ -712,6 +730,10 @@ abstract class UserAuthenticationBackend  extends AuthenticationBackend {
         $ost->logDebug(_S('User logout'),
             sprintf(_S("%s logged out [%s]" /* Tokens are <username> and <ip> */),
                 $user->getUserName(), $_SERVER['REMOTE_ADDR']));
+
+        $u = $user->getSessionUser()->getUser();
+        $type = array('type' => 'logout');
+        Signal::send('person.logout', $u, $type);
     }
 
     protected function getAuthKey($user) {
@@ -890,6 +912,13 @@ class StaffAuthStrikeBackend extends  AuthStrikeBackend {
             $admin_alert = ($cfg->alertONLoginError() == 1) ? TRUE : FALSE;
             $ost->logWarning(sprintf(_S('Excessive login attempts (%s)'),$username),
                     $alert, $admin_alert);
+
+              if ($username) {
+                $agent = Staff::lookup($username);
+                $type = array('type' => 'login', 'msg' => sprintf('Excessive login attempts (%s)', $authsession['strikes']));
+                Signal::send('person.login', $agent, $type);
+              }
+
             return new AccessDenied(__('Forgot your login info? Contact Admin.'));
         //Log every other third failed login attempt as a warning.
         } elseif($authsession['strikes']%3==0) {
@@ -950,6 +979,21 @@ class UserAuthStrikeBackend extends  AuthStrikeBackend {
                     _S('Attempts').": {$authsession['strikes']}";
             $admin_alert = ($cfg->alertONLoginError() == 1 ? TRUE : FALSE);
             $ost->logError(_S('Excessive login attempts (user)'), $alert, $admin_alert);
+
+            if ($username) {
+              $account = UserAccount::lookupByUsername($username);
+              $id = UserEmailModel::getIdByEmail($username);
+              if ($account)
+                  $user = User::lookup($account->user_id);
+              elseif ($id)
+                $user = User::lookup($id);
+
+              if ($user) {
+                $type = array('type' => 'login', 'msg' => sprintf('Excessive login attempts (%s)', $authsession['strikes']));
+                Signal::send('person.login', $user, $type);
+              }
+            }
+
             return new AccessDenied(__('Access denied'));
         } elseif($authsession['strikes']%3==0) { //Log every third failed login attempt as a warning.
             $alert=_S('Username').": {$username}\n".
@@ -1329,7 +1373,7 @@ abstract class PasswordPolicy {
                         Q::not(array('session_id' => $user->session->session_id)));
                 break;
             case ($model instanceof User):
-                $regexp = '_auth\|.*"user";[a-z]+:[0-9]+:{[a-z]+:[0-9]+:"id";[a-z]+:'.$model->getId();
+                $regexp = '_auth\|.*"user";[a-z]+:[0-9]+:\{[a-z]+:[0-9]+:"id";[a-z]+:'.$model->getId();
                 $criteria['user_id'] = 0;
                 $criteria['session_data__regex'] = $regexp;
 

@@ -1,7 +1,234 @@
+osTicket v1.14.3
+================
+### Enhancements
+* select2: Update To 4.0.13 (b67c75b)
+* jquery: Update To 3.5.1 (121ab41)
+* redactor: Upgrade to version 3.4.2 (384fe27)
+* Issue: Template Variables in Ticket Filter (8ef505d, 8a82d1e)
+* issue: Get Team Members For Alerts (d88e384)
+* Issue: Topic Help Tip (66fc808)
+* Create SECURITY.md (165cf18, 0ecfceb)
+* redactor: Upgrade to version 3.4.1 (8f08a09)
+* inline: RichText Fields View First (d8ff946, a97ddba)
+* print: Update Icons and Add Titles (be18e46)
+* issue: Update Print Options Icons/Text/Title (b4cd46a)
+* refactor: Help Topic Status Refresh (2dee16b)
+* Adding translation to the dashboard plot labels. (ebfd68b)
+* Issue: Language Verification (a1e9342)
+
+### Improvements
+* oops: Local Inline Images (f6cd8c4)
+* Issue: Ticket Edit Save (3281e74)
+* Revert Topic Saving Fixes (0ff87f3)
+* issue: NOTLS For IMAP/POP Without SSL (7506937)
+* Update dynamic-field-config.tmpl.php (e847ddb)
+* Ticket Merge Translation Improvement (ba389a6)
+* oops: Task Missing Parentheses (b7684ad)
+* Issue: Create Task File Upload (87f5006)
+* issue: Delete Users With Tickets (9d2e1da)
+* DynamicField Update (c21452b)
+* issue: Form Field Help Text Not Null (e295c52)
+* export: Duplicate Results (b415baf)
+* issue: Email Template Internal Notes (8d6b9aa)
+* oops: Change lastupdate To updated For Tasks (03bedc5)
+* i18n: Redactor Files Not Included (f91308a)
+* Issue: Ticket Task Print (7b6ba94)
+* Issue: Topic Fields on Ticket Edit (f79a28a)
+* issue: Activity Notice getLastRespondent() (07024fc)
+* Issue: Create Team With Members (6f50e91)
+* i18n: Don't Store Files Under Branch Name (31dfc6e)
+* template: Add Ticket ID To Var Scope (351f8ec)
+* Issue: Topic and Department Columns (36778cc)
+* sla: Force Intval For Scientific Floats (9ea2e4d)
+* oops: JS Method Typo (58e559d)
+* issue: Signature Box No Longer Expands (5d68847)
+* install: Add Mark As Answered To All Access (0765571)
+* print: Client Print Not Respecting Identity Masking (5db5a72)
+* templates: %{ticket.thread.complete} Not Respecting Identity Masking (faec1a7)
+* issue: Filter Action Add Button (adc46ae)
+* install: Embedded Domain Whitelist (e0b5d81)
+* install: Schedule, SLA, and Help Tip Updates (88dd0aa, e589c1b, 1860db4)
+* Issue: Ticket Number Search (61443ef)
+* issue: PHP 7.4 Warnings (1aafa42, d93379e, 90f5985)
+* issue: Flush Model Cache (db5eb07)
+* Issue: PHP Warning (4997780)
+* issue: MySQL 8.0 {min,max} Value Error (bb54dea)
+* issue: Mass Delete Help Topics Warning (52fd884)
+* issue: Org Added Collabs (0ee25b8)
+* issue: Attachment Upload Configuration (2540350)
+
+### Performance and Security
+* security: Reported Vulns July-August 2020 (fb57082, d2491c1, d98c2d0, 518de22)
+* xss: FAQ Category On Errors (292e7dd)
+
+osTicket v1.14.2
+================
+### Enhancements
+* Task Inline Edit (ad04c05, 027c8d2, 7209b03, 2b8a6dc, 79b69aa, 49aba87, 1179d60, cc8d64e)
+* feature: Configurable Agents As Collaborators (5f5403d, bdcaeea, 9426e67, 4ed30c5)
+* Ticket Merge Modal Improvements (d31a0c7)
+* redactor: Double Spacing Optional (fa418e6)
+* inline: Set Help Topic Refresh Statuses (be4e01e)
+* lint: updateEstDueDate (a8fe0bd)
+* Ticket Merge Parent Status (bebc724)
+* Schedule Entry - getOccurrences algo. (0184473)
+* Queue Query Optimization (8c07c17)
+
+### Improvements
+* Issue: Merge Child Status (34af390)
+* 1.14 Misc. Fixes (869d117)
+* Issue: Filter Actions for Deleted Objects (b918e2d)
+* ui: improve action buttons (b25c66b, a11f882)
+* Misc. Fixes (e8acf81, f5d1664, aed5d6f, ac5f93e, 77577df, e397f03,
+* bfa7b57, 3c0dd3d, 5955c3a, c2b99ab, c9cc1e2, 51b5839)
+* Issue: Class AuditEntry Not Found (8023ba9)
+* oopsie: Revert errant delete by commit 027c8d29 (f16cd79)
+* lint: oopsie on undefined variable (4f19924)
+* issue: Move Owner Check to Ticket Collabs (7d44262)
+* oops: Update Schedule No Description (774d5f7)
+* revert: Agent Added Agent Collabs (cc7deda)
+* issue: AuditEntry Not Found (9e3ca8c)
+* issue: Collab Pass By Reference (a3a1d45)
+* Add AnnotatedField interface to  TicketTasksCountField (fbc1b11)
+* Audit Plugin Modal Fix (a883f90)
+* Issue: Duplicate Thread Entry Merge Records (ef6b7da)
+* export: User/Org Tickets (0cd4168)
+* i18n: Help Text Translate Button (cc2d0ab)
+* install: Task Title/Description Field Flags (6727ebb)
+* issue: Trailing Whitespaces Number Lookups (d8cb1e8)
+* issue: Duplicate Tickets in Lookup (95f9b83)
+* issue: BooleanField Inline Edit Value (23a463c)
+* issue: BooleanField Cannot Be Unchecked (1556242)
+* Issue: Managing Child Ticket Threads (7f85946)
+* Oops: Set Child Ticket Status (c216a72)
+* feature: Force HTTPS (1de9b4c)
+* Issue: Close Child Ticket Without Help Topic (2fb81aa)
+* Issue: Inline Edit Long Answer (608044d)
+* Issue: Ticket Link/Merge (bb0f9bd)
+* dept: Disable Auto Claim (3684879)
+* redactor: Cancel Button (3bab103)
+* issue: Redactor z-index (19cc9a0)
+* Issue: Overwriting thisstaff on Assign (77065f5)
+* Schedule Entry - Initial Occurrence Scope (3a41b09, 3da5bd7)
+* issue: mPDF Print Tables (2bd464f)
+* Clear Overdue Flag 4realz (057c817)
+* Ticket Merge/Link Defaults (3f93cd9)
+* User Audit Issue (97a55a4, 613b4ab)
+
+### Performance and Security
+* upgrade: Redactor 3.3.5 (4634a86)
+
+osTicket v1.12.6
+================
+### Enhancements
+* issue: Edit User Popup Perm (c73877d)
+* format: Strip PUA (Plane 16) (caeda93)
+* issue: New Task Alert (5dd123e, 3283050)
+* lint: Minified JS Warnings (0443715)
+* support: IE Discontinued (699728f)
+* issue: Shared Mailbox Auth (7bb9fd8)
+* plugins: Add Version Column (f86c93e, 5b0f1ce)
+* Issue: User Imports Headers (787417f)
+* Support message/rfc822 as attachments (af1c4a6)
+* tooltip: Email Username (edd1fc3)
+* Issue: Ticket Search Typeahead (9b9a56f)
+* Issue: Ticket Open URL (f2e2403)
+* Inline Edit Fields With Data Integrity (6015d04)
+
+### Improvements
+* issue: Show Custom Validation Message (ca6ad5c)
+* SLA Grace Period (b373b8f)
+* issue: DynamicForm i18n Instructions Decode (56d3d67)
+* issue: Information Field Help Text Decode (abb9799)
+* i18n: Help Text Formatting (6b8cc9b)
+* issue: ThreadEntryField Help Text (6370484)
+* issue: Department Parent (3f29845)
+* Add support for sub-query based constraints. (c069def, 6579cf4, f61748c, 0eeec7e)
+* Update class.filter.php (#5320) (f42f2baf)
+* Allow external UserAuthenticationBackend … (ffb179f)
+* Issue: New Agent Extended Access and Teams (d4b8b3a)
+* issue: Mass Process Add Users To Organization (6cc7c69)
+* i18n: TextareaField Placeholder (fa9df2b)
+* issue: Confirm Popup Promise (b1f881b)
+* Remove unnecessary PHP Notice in ORM (Fix #5432) (5dac549, 03e25a8)
+* session: Destroy Warning PHP 7.3 (e6f0483)
+* oops: is_numeric Soft Fail (7c9ed61)
+* Oops: User Import Fix (40b40f8)
+* validate: Validation Error Messages From Source (9e21dfd)
+* issue: PasswordField Validation (9cc5cb6)
+* issue: Multiple Choice Export (3005d42)
+* lint: Uninitialized Matches (7873c5b)
+* issue: PDF Global $ost (07878f5)
+* Spelling correction function name (44cbc30)
+* issue: Quotes In User Name (ea6fc44)
+* issue: Add Remote Collaborator (c60e2f3)
+* emoji: Strip From Subject (e3547ea, e24c78c)
+* Issue: DB Error #1054 (18c9311)
+* install: Forum and Docs Links (dddfede)
+* queue: Inherit Columns Option (2e146ad)
+* Issue: Help Topic Number Format (52c9c59)
+* issue: User Manage Org Name (7a6b85c)
+* issue: Require Client Login (5136198)
+* Fix confusing sentence (4e7d12c)
+* issue: Update Staff checkPassword() (0659338)
+* validate: Number Field Edit Zero (e6e4e90)
+* issue: New Agent Welcome Email (1949d4f)
+* queue: Inherit Columns Option (38df2c8, 1a32e2a, 4434a93)
+* Issue: Remove Referrals (2acf9aa)
+* mail: Mail_Parse::getAttachments () (d310740)
+* Issue: Blank Date Time (60ccbb7)
+* Issue: Thread Events for File Field Changes (4d43adf)
+* Issue: New Custom Fields (9591411)
+* Oops: Variable Overwrite (c048768)
+* session: Destroy Warning (8c69891)
+* Issue: DB Error #1064 Queue Counts (f26ce60)
+* notes: Confirm Deletion (0d86e7f)
+
+### Performance and Security
+* xss: All Reported Vulns (f705001, de41aeb, fc4c860, d54cca0, 6c724ea, 601fdcd)
+
+osTicket v1.14.1
+================
+### Improvements
+* Revert commit cedd6121 (7dd7bfa)
+* Clear Overdue On Reopen (6dc0b74)
+* Allow Repeatable Once Entries (cb9bb2f)
+
 osTicket v1.12.5
 ================
 ### Performance and Security
 * Hotfix: File data callback (d3e643d)
+
+osTicket v1.14
+==============
+### Enhancements
+* php: 5.6 Support (5e7497d, 5f3a8f4)
+* Oops: Lint Fixes (c5b15d6)
+* Update index.php (e7779e2)
+* Overdue oopsie (de7271d)
+* Ticket Task count (b4fca25)
+* Visibility: Move getJsComparator to Widget class (d3f46bf)
+* i18n spelling  oopsies (36b44f7)
+
+### Improvements
+* Require Between Date Entries (1aaee58)
+* Add Ticket Reference to Tasks (af97900)
+* Disabled SLA (2fe5370)
+* Queues:  Agents with no team assignment (a00cee9)
+* Ticket Merge Upgrade Patch (38fada0)
+* ticket-view: Add ZIP export option (5e5b6b8)
+* issue: Check $cfg iFrame (a6b8200)
+* feature: Separate SMTP Credentials (edb8ac6, d2cb614, 9d4bcb5, 093984b,
+* b6d13a2)
+* feature: Fetch From Mail Folder (d70dfc1, 901d30a)
+* feature: Configurable iFrame Whitelist (44200e5, 2330f47)
+* Ticket Merge: Close Children (6fef208)
+* Audit Log Plugin (9b80889, 8e3fd4d, bb3d092, 46a764f, 72974c8, 27cfd65,
+* 69da645, 349c982, 7cfc062, a4bd53b, e0ca7e2, d942b16, 2aacbd1, ff90638,
+* 40771ea, 30eeaf9, 2c350f3, f261283, 205b3ae, 5c91dc1, ac1e99c, 59e5d71,
+* 203c716, 54a175a, 5ba9e89, 419a478)
+* Issue: Organization Update (7b6bd90)
+* issue: Redactor Reset Buttons (8078d4d)
 
 osTicket v1.12.4
 ================
@@ -39,6 +266,32 @@ osTicket v1.12.4
 * Auth: Authentication Token Bypass (a9834d8)
 * mPDF: Remote Code Execution Vulnerability (6e039ab)
 * issue: Attachment Filter (9f4fbc2)
+
+osTicket v1.14-rc2
+==================
+### Enhancements
+* Oops: Lint Fixes (e76c64e)
+* Draft Saving in New Redactor (644da1b)
+* Cache Children Tickets (a0a58e4)
+* Make getChildrenTickets Static (42339c2)
+* Lint Fixes (98f4b37, 3eabaa1)
+
+### Improvements
+* Issue: Task Drafts (3e8bce4)
+* Lint Fixes (3eabaa1)
+* Issue: Task Collaborator Display (d1790f1)
+* Fix Link Sort (3a41a8a)
+* Issue: Unlinking From Child Ticket (c76cb21)
+* issue: Redactor QuickNotes (7251bcf)
+* Delete Thread Merge Conflict (d4b6ab6)
+* Custom Queue default sort selection (bbd2e80)
+* issue: Staff/User Email Length (b969407)
+* Queue Sort Options (d2611b5)
+* Default for Choice Fields (d85ede8)
+* Show list of nested help topics on edit (423c915)
+* Upgrader Issue: Ticket Flags (e0298f2)
+* issue: Ticket Filter Assignment Event (606993e)
+* Don't Delete Child Threads (24b220d)
 
 osTicket v1.12.3
 ================
@@ -79,6 +332,33 @@ osTicket v1.12.3
 * issue: Set Staff Password On Creation (d9108b1)
 * issue: THIS_VERSION Utilize MAJOR_VERSION (5b4c512)
 * Issue: Reopen Assignment (e73e881)
+
+osTicket v1.14-rc1
+==================
+### Major New Features
+* Feature: Merge/Link Tickets (a8a4dec…c870df0)
+* Introducing Schedules / Business Hours for SLAs (54e06e9…39771f8)
+* Export Revisited (19ac222…045f6a6)
+
+### Enhancements
+* Ticket Merge Code Fixes (06faacb)
+* Custom Priority Field Blank (f7ea1f6)
+* Field Length Truncate (4d6de40)
+* Formatting cleanup (d0de290)
+* issue: Fix Patch Issue (8a8167e)
+* Code Cleanup (6ff4491)
+* Add thread_type Patch (9f9292f)
+* Modify Draft Saving (e06fb46)
+* Don't require refresh for inline edit (1071d10)
+* ORM Parentheses Patch (fff2e29)
+* Delete Threads/Entries of Deleted Tickets (a39c115)
+* issue: Form Field Flags (94e770a)
+* issue: User/Org Ticket Export (25153ed)
+* Add thread_type Patch (15ed4b1)
+* queue: Add Filtering To Queues (cedd612)
+* issue: Default Queue Sorting (6db9507)
+* Fix Saving For Fields: (c3eaec1)
+* Issue: Queue with Teams in Criteria (d8b61e8)
 
 osTicket v1.12.2
 ================

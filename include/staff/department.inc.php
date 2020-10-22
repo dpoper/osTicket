@@ -67,7 +67,7 @@ $info = Format::htmlchars(($errors && $_POST) ? $_POST : $info);
                       if(!array_key_exists($info['pid'], $depts) && $info['pid'])
                       {
                         $depts[$info['pid']] = $current_name;
-                        $warn = sprintf(__('%s selected must be active'), __('Parent Department'));
+                        $errors['pid'] = sprintf(__('%s selected must be active'), __('Parent Department'));
                       }
                     foreach ($depts as $id=>$name) {
                         $selected=($info['pid'] && $id==$info['pid'])?'selected="selected"':'';
@@ -76,10 +76,7 @@ $info = Format::htmlchars(($errors && $_POST) ? $_POST : $info);
                   }
                   ?>
               </select>
-              <?php
-              if($warn) { ?>
-                  &nbsp;<span class="error">*&nbsp;<?php echo $warn; ?></span>
-              <?php } ?>
+              &nbsp;<span class="error">*&nbsp;<?php echo $errors['pid']; ?></span>
             </td>
         </tr>
         <tr>
@@ -139,6 +136,26 @@ $info = Format::htmlchars(($errors && $_POST) ? $_POST : $info);
                     ?>
                 </select>
                 &nbsp;<span class="error"><?php echo $errors['sla_id']; ?></span>&nbsp;<i class="help-tip icon-question-sign" href="#sla"></i>
+            </td>
+        </tr>
+        <tr>
+            <td width="180">
+                <?php echo __('Schedule');?>:
+            </td>
+            <td>
+                <select name="schedule_id">
+                    <option value="0" selected="selected" >&mdash; <?php
+                    echo __("SLA's Default");?> &mdash;</option>
+                    <?php
+                    if ($schedules=BusinessHoursSchedule::getSchedules()) {
+                        foreach ($schedules as $s) {
+                            echo sprintf('<option value="%d" %s>%s</option>',
+                                    $s->getId(), ($info['schedule_id']==$s->getId()) ? 'selected="selected"' : '', $s->getName());
+                        }
+                    }
+                    ?>
+                </select>
+                &nbsp;<span class="error"><?php echo $errors['schedule_id']; ?></span>&nbsp;<i class="help-tip icon-question-sign" href="#schedule"></i>
             </td>
         </tr>
         <tr>

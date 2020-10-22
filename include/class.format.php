@@ -42,6 +42,10 @@ class Format {
         return $size;
     }
 
+    function filename($filename) {
+        return preg_replace('/[^a-zA-Z0-9\-\._]/', '-', $filename);
+    }
+
     function mimedecode($text, $encoding='UTF-8') {
         // Handle poorly or completely un-encoded header values (
         if (function_exists('mb_detect_encoding'))
@@ -291,6 +295,7 @@ class Format {
     }
 
     function safe_html($html, $options=array()) {
+        global $cfg;
 
         $options = array_merge(array(
                     // Balance html tags
@@ -327,10 +332,17 @@ class Format {
             'deny_attribute' => 'id',
             'schemes' => 'href: aim, feed, file, ftp, gopher, http, https, irc, mailto, news, nntp, sftp, ssh, telnet; *:file, http, https; src: cid, http, https, data',
             'hook_tag' => function($e, $a=0) { return Format::__html_cleanup($e, $a); },
-            'elements' => '*+iframe',
-            'spec' =>
-            'iframe=-*,height,width,type,style,src(match="`^(https?:)?//(www\.)?(youtube|dailymotion|vimeo|player.vimeo)\.com/`i"),frameborder'.($options['spec'] ? '; '.$options['spec'] : '').',allowfullscreen',
         );
+
+        // iFrame Whitelist
+        if ($cfg)
+            $whitelist = $cfg->getIframeWhitelist();
+        if (!empty($whitelist)) {
+            $config['elements'] = '*+iframe';
+            $config['spec'] = 'iframe=-*,height,width,type,style,src(match="`^(https?:)?//(www\.)?('
+                .implode('|', $whitelist)
+                .')/?`i"),frameborder'.($options['spec'] ? '; '.$options['spec'] : '').',allowfullscreen';
+        }
 
         return Format::html($html, $config);
     }
@@ -399,13 +411,29 @@ class Format {
 
     //Format text for display..
     function display($text, $inline_images=true, $balance=true) {
+        global $cfg;
+
+        // Exclude external images?
+        $exclude = !$cfg->allowExternalImages();
+        // Allowed image extensions
+        $allowed = array('gif', 'png', 'jpg', 'jpeg');
+
         // Make showing offsite images optional
         $text = preg_replace_callback('/<img ([^>]*)(src="http[^"]+")([^>]*)\/>/',
-            function($match) {
-                // Drop embedded classes -- they don't refer to ours
-                $match = preg_replace('/class="[^"]*"/', '', $match);
-                return sprintf('<span %s class="non-local-image" data-%s %s></span>',
-                    $match[1], $match[2], $match[3]);
+            function($match) use ($exclude, $allowed) {
+                $m = array();
+                // Split the src URL and get the extension
+                preg_match('/src="([^"]+)"/', $match[2], $m);
+                $url = explode('.', explode('?', $m[1])[0]);
+                $ext = preg_split('/[^A-Za-z]/', end($url))[0];
+
+                if (!$exclude && in_array($ext, $allowed)) {
+                    // Drop embedded classes -- they don't refer to ours
+                    $match = preg_replace('/class="[^"]*"/', '', $match);
+                    return sprintf('<span %s class="non-local-image" data-%s %s></span>',
+                        $match[1], $match[2], $match[3]);
+                } else
+                    return '';
             },
             $text);
 
@@ -419,6 +447,33 @@ class Format {
             return self::viewableImages($text);
 
         return $text;
+    }
+
+    function stripExternalImages($input, $display=false) {
+        global $cfg;
+
+        // Allowed Inline External Image Extensions
+        $allowed = array('gif', 'png', 'jpg', 'jpeg');
+        $exclude = !$cfg->allowExternalImages();
+        $local = false;
+
+        $input = preg_replace_callback('/<img ([^>]*)(src="([^"]+)")([^>]*)\/?>/',
+            function($match) use ($local, $allowed, $exclude, $display) {
+                if (strpos($match[3], 'cid:') !== false)
+                    $local = true;
+
+                // Split the src URL and get the extension
+                $url = explode('.', explode('?', $match[3])[0]);
+                $ext = preg_split('/[^A-Za-z]/', end($url))[0];
+
+                if (!$local && (($exclude && $display) || !in_array($ext, $allowed)))
+                    return '';
+                else
+                    return $match[0];
+            },
+            $input);
+
+        return $input;
     }
 
     function striptags($var, $decode=true) {
@@ -452,6 +507,7 @@ class Format {
                 '/[\x{23F0}-\x{23FF}]/u',   # Clock/Buttons
                 '/[\x{23E0}-\x{23EF}]/u',   # More Buttons
                 '/[\x{2310}-\x{231F}]/u',   # Hourglass/Watch
+                '/[\x{1000B6}]/u',          # Private Use Area (Plane 16)
                 '/[\x{2322}-\x{232F}]/u'    # Keyboard
             ), '', $text);
     }
@@ -549,6 +605,37 @@ class Format {
         }
 
         return number_format((int) $number);
+    }
+
+    /*
+     * Add ORDINAL suffix to a number e.g 1st, 2nd, 3rd etc.
+     * TODO: Combine this routine with Format::number and pass in type of
+     * formatting.
+     */
+    function ordinalsuffix($number, $locale=false) {
+        if (is_array($number))
+            return array_map(array('Format', 'ordinalsuffix'), $number);
+
+        if (!is_numeric($number))
+            return $number;
+
+        if (extension_loaded('intl') && class_exists('NumberFormatter')) {
+            $nf = new NumberFormatter($locale ?:
+                    Internationalization::getCurrentLocale(),
+                    NumberFormatter::ORDINAL);
+            return $nf->format($number);
+        }
+
+        // Default to English ordinal
+        if (!in_array(($number % 100), [11,12,13])) {
+            switch ($number % 10) {
+            case 1:  return $number.'st';
+            case 2:  return $number.'nd';
+            case 3:  return $number.'rd';
+            }
+        }
+
+        return $number.'th';
     }
 
     /* elapsed time */
